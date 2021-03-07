@@ -111,6 +111,8 @@ resource "aws_instance" "web_server" {
                   sudo su
                   yum -y install httpd
                   echo "<p> Hello World! </p>" >> /var/www/html/index.html
+                  mkdir -p /var/www/html/secure/
+                  mkdir -p /var/www/html/open/
                   echo "<p> Super Secure </p>" >> /var/www/html/secure/index.html
                   echo "<p> Hello World! </p>" >> /var/www/html/open/index.html
                   sudo systemctl enable httpd
@@ -242,6 +244,18 @@ resource "aws_cognito_user_pool_domain" "user_pool_domain" {
   domain          = "auth.robarthur.co.uk"
   certificate_arn   = aws_acm_certificate.dev_robarthur_co_uk.arn
   user_pool_id = aws_cognito_user_pool.user_pool.id
+}
+
+resource "aws_route53_record" "auth_cognito_A" {
+  name    = aws_cognito_user_pool_domain.user_pool_domain.domain
+  type    = "A"
+  zone_id = data.aws_route53_zone.robarthur_co_uk.zone_id
+  alias {
+    evaluate_target_health = false
+    name                   = aws_cognito_user_pool_domain.user_pool_domain.cloudfront_distribution_arn
+    # This zone_id is fixed
+    zone_id = "Z2FDTNDATAQYW2"
+  }
 }
 
 resource "aws_cognito_user_pool_client" "user_pool_client" {
